@@ -1,12 +1,12 @@
 import { AppConfig } from '../utils/AppConfig';
 
 const FooterCopyright = () => (
-  <div className="footer-copyright">
+  <div className="footer-copyright" style={{fontSize: '16px'}}>
     © Copyright {new Date().getFullYear()}. Powered with{' '}
     <span role="img" aria-label="Love">
       ♥
     </span>{' '}
-    by <a href="https://www.qrlix.com">Qrlix.com</a>
+    by <a href="https://www.qrlix.com"> <img style={{ width: '60px', display: 'inline' }} src="../qrlix.png"></img></a> 
     {/*
      * PLEASE READ THIS SECTION
      * We'll really appreciate if you could have a link to our website
