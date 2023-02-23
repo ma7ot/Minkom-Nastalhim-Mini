@@ -67,43 +67,43 @@ export default function RegisterForm() {
   const [user, setUser] = useState(null);
 
   async function cookieFetch() {
-      const token = window.localStorage.getItem("token") || window.sessionStorage.getItem("token");
-      console.log(token)
-      if (!token) {
+    const token = window.localStorage.getItem("token") || window.sessionStorage.getItem("token");
+    console.log(token)
+    if (!token) {
+      redirectToLogin();
+      setUser(null);
+    } else {
+      (async () => {
+        try {
+          const data = await whoAmI();
+          console.log('data', data)
+
+          if (data.error === "Unauthorized") {
+            // User is unauthorized and there is no way to support the User, it should be redirected to the Login page and try to logIn again.
+            redirectToLogin();
+            setUser(null);
+          } else {
+            var result = Object.values(data.payload);
+            setUser(data.payload);
+            console.log('data.payloaddata.payload', data.payload)
+          }
+        } catch (error) {
+          // If we receive any error, we should be redirected to the Login page
           redirectToLogin();
           setUser(null);
-      } else {
-          (async () => {
-              try {
-                  const data = await whoAmI();
-                  console.log('data', data)
-
-                  if (data.error === "Unauthorized") {
-                      // User is unauthorized and there is no way to support the User, it should be redirected to the Login page and try to logIn again.
-                      redirectToLogin();
-                      setUser(null);
-                  } else {
-                      var result = Object.values(data.payload);
-                      setUser(data.payload);
-                      console.log('data.payloaddata.payload', data.payload)
-                  }
-              } catch (error) {
-                  // If we receive any error, we should be redirected to the Login page
-                  redirectToLogin();
-                  setUser(null);
-              }
-          })();
-      }
+        }
+      })();
+    }
   }
   // Watchers
 
   useEffect(() => {
-      cookieFetch();
+    cookieFetch();
   }, [router.pathname]);
 
 
   function redirectToLogin() {
-      Router.push("/login");
+    Router.push("/login");
   }
 
 
@@ -139,7 +139,7 @@ export default function RegisterForm() {
 
     if (userInfoRef.current.fullname == '' || userInfoRef.current.studentID == '' || userInfoRef.current.univeristySelect == '' || userPhoneRef.current == '') {
       res.status = false;
-      res.msgs.push('All fields are required')
+      res.msgs.push('Some fields are required')
     }
 
     if (userInfoRef.current.fullname.length < 5) {
@@ -254,9 +254,15 @@ export default function RegisterForm() {
 
     }
   }
+  const [uploading, setUploading] = useState(false);
 
 
   function handleChange(event) {
+    if(uploading == true){
+      seterrMsgs([...errMsgs, 'Upload in progress, please wait! '])
+
+      return;
+    }
     if (userInfo.studentID == '' || userInfo.studentID == null) {
       seterrMsgs([...errMsgs, 'Insert the student ID number first'])
       return;
@@ -280,6 +286,7 @@ export default function RegisterForm() {
     }
     var rand;
 
+    setUploading(true)
 
     const storageRef = ref(storage, `/projects/Nastalhim/ID-${userInfo.studentID}`);
 
@@ -297,9 +304,15 @@ export default function RegisterForm() {
         // update progress
         setPercent(percent);
       },
-      (err) => console.log(err),
+      (err) => {
+        setUploading(false)
+
+        console.log(err)
+      },
       () => {
         // download url
+        setUploading(false)
+
         getDownloadURL(uploadTask.snapshot.ref).then(async (url) => {
           console.log(url);
           setNewUrl(url)
