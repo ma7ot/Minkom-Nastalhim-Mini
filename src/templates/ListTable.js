@@ -278,7 +278,7 @@ const CustomTableRow = ({ item, idx, onRefresh }) => {
         }
         var rand;
 
-        const storageRef = ref(storage, `/projects/Nastalhim/BOOK-${randomIntFromInterval(10000000, 9999999)}`);
+        const storageRef = ref(storage, `/projects/Nastalhim/BOOK-${randomIntFromInterval(100000, 99999999)}`);
 
         // progress can be paused and resumed. It also exposes progress updates.
         // Receives the storage reference and the file to upload.
