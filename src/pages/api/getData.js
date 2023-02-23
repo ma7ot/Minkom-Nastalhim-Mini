@@ -98,13 +98,30 @@ export default async function handler(req, res) {
       const limit = incoming.limit
       const ID = incoming.ID
       const rec = incoming.rec
+      const prev = incoming.prev
 
+      const books = incoming.books
+      const booksImg = incoming.booksImg
+
+      if (rec + prev > limit) {
+        res.status(500).json({ ok: false, error: "Book limit exceeded" });
+        return;
+      }
       try {
 
-        var query = "UPDATE students SET status = 1, book_limit = " + limit + ", book_received = " + rec + " WHERE id = " + ID
+        var query = "UPDATE students SET book_received = book_received + " + rec + " WHERE id = " + ID
 
         const values = [];
         const [data] = await dbconnection.execute(query, values);
+
+        var key = 0
+        for (const book of books) {
+          let query = "INSERT INTO student_books (student_id, name, received_at, img) VALUES (?,?, ?, ?)";
+          let values = [ID, book, moment().locale('en').format("YYYY-MM-DD HH:mm:ss"), booksImg[key]];
+          let [data] = await dbconnection.execute(query, values);
+          console.log(data)
+          key++;
+        }
         dbconnection.end();
 
         res.status(200).json({ ok: true });

@@ -146,7 +146,7 @@ export default function LoginForm() {
           window.sessionStorage.setItem("token", data.payload.token);
         }
         setTimeout(() => {
-          Router.push("/list");
+          Router.push("/");
         }, 300);
 
       } else {

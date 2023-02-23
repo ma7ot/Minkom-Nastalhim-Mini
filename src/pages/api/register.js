@@ -76,9 +76,11 @@ export async function registerUser(d) {
   const types = [1, 2, 3, 4, 5, 6]
   const dbconnection = await dbConnection();
 
+  const uni = d.user.univeristy == 0 ? d.user.univeristySelect : d.user.univeristy;
+  const limit = d.isVodaphone == true? 3 : 2
   try {
-    const query = "INSERT INTO students (name, phone, univeristy, student_id, book_limit, book_received, created_at) VALUES (?,?, ?, ?, ?, ?, ?)";
-    const values = [d.user.fullname, d.phone, d.user.univeristy, d.user.studentID, 0, 0, moment().locale('en').format("YYYY-MM-DD HH:mm:ss")];
+    const query = "INSERT INTO students (name, phone, univeristy, student_id, book_limit, book_received, created_at, img) VALUES (?,?, ?, ?, ?, ?, ?,?)";
+    const values = [d.user.fullname, d.phone, uni, d.user.studentID, limit, 0, moment().locale('en').format("YYYY-MM-DD HH:mm:ss"), d.img];
 
     console.log(values);
     const [data] = await dbconnection.execute(query, values);

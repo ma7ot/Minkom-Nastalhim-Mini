@@ -20,7 +20,7 @@ const Hero = () => (
       <HeroOneButton
         title={
           <>
-          <span style={{fontFamily: '"Jomhuria", cursive', fontSize: '1.7em'}}>{'مِنْكُمْ نَسْتَلْهِم\n'}</span>
+          <span style={{fontFamily: '"Jomhuria", cursive', fontSize: '1.7em'}}>{'مِنْكَ نَسْتَلْهِم\n'}</span>
             
             <span className="text-primary-500">Student Registration</span>
           </>

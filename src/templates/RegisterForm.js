@@ -1,5 +1,4 @@
 import { useState, useEffect, useContext, useRef } from "react";
-import Router from "next/router";
 import { ColorRing } from 'react-loader-spinner'
 
 import 'react-phone-number-input/style.css'
@@ -22,9 +21,18 @@ import Typography from '@material-ui/core/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Box from '@material-ui/core/Box';
 
+import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
+import storage from "../lib/bucket"
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import { whoAmI } from "../lib/auth";
+import Router, { useRouter } from "next/router";
+
 export default function RegisterForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter()
 
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,10 +53,69 @@ export default function RegisterForm() {
   var userPhoneRef = useRef()
   userPhoneRef.current = userPhone
 
+  const [saving, setSaving] = useState(null);
+  const [newUrl, setNewUrl] = useState("");
+  const [images, setImages] = useState(null);
+  const [imageDisplay, setImageDisplay] = useState(null);
+  const [percent, setPercent] = useState(0);
+  const [isVodaphone, setIsVodaphone] = useState(true);
 
-  function resetInputs(){
-    setUserInfo({ fullname: '', studentID: '', univeristy: '' })
+  var newUrlRef = useRef()
+  newUrlRef.current = newUrl
+
+
+  const [user, setUser] = useState(null);
+
+  async function cookieFetch() {
+      const token = window.localStorage.getItem("token") || window.sessionStorage.getItem("token");
+      console.log(token)
+      if (!token) {
+          redirectToLogin();
+          setUser(null);
+      } else {
+          (async () => {
+              try {
+                  const data = await whoAmI();
+                  console.log('data', data)
+
+                  if (data.error === "Unauthorized") {
+                      // User is unauthorized and there is no way to support the User, it should be redirected to the Login page and try to logIn again.
+                      redirectToLogin();
+                      setUser(null);
+                  } else {
+                      var result = Object.values(data.payload);
+                      setUser(data.payload);
+                      console.log('data.payloaddata.payload', data.payload)
+                  }
+              } catch (error) {
+                  // If we receive any error, we should be redirected to the Login page
+                  redirectToLogin();
+                  setUser(null);
+              }
+          })();
+      }
+  }
+  // Watchers
+
+  useEffect(() => {
+      cookieFetch();
+  }, [router.pathname]);
+
+
+  function redirectToLogin() {
+      Router.push("/login");
+  }
+
+
+
+  function resetInputs() {
+    setUserInfo({ fullname: '', studentID: '', univeristy: '', univeristySelect: '' })
     setUserPhone('')
+    setImageDisplay(null)
+    setImages(null)
+    setIsVodaphone(true)
+    setPercent(0)
+    seterrMsgs([])
   }
   function handleUserInfo(e) {
 
@@ -70,7 +137,7 @@ export default function RegisterForm() {
       msgs: []
     }
 
-    if (userInfoRef.current.fullname == '' || userInfoRef.current.studentID == '' || userInfoRef.current.univeristy == '' || userPhoneRef.current == '') {
+    if (userInfoRef.current.fullname == '' || userInfoRef.current.studentID == '' || userInfoRef.current.univeristySelect == '' || userPhoneRef.current == '') {
       res.status = false;
       res.msgs.push('All fields are required')
     }
@@ -141,10 +208,13 @@ export default function RegisterForm() {
       user: userInfoRef.current,
       //bizz: bizzInfoRef.current,
       phone: userPhoneRef.current,
+      img: newUrlRef.current,
+      isVodaphone: isVodaphone
       //bizzPhone: userPhoneRef.current,
     }
     //setIsLoading(true);
     console.log('data', data)
+
     try {
       //setIsLoading(true);
       // API call:
@@ -153,7 +223,7 @@ export default function RegisterForm() {
       if (res.set == true) {
         setIsLoading(true);
         setConfirmation(true)
-        setTimeout(()=>{
+        setTimeout(() => {
           setConfirmation(false)
         }, 7000)
         resetInputs()
@@ -184,6 +254,60 @@ export default function RegisterForm() {
 
     }
   }
+
+
+  function handleChange(event) {
+    if (userInfo.studentID == '' || userInfo.studentID == null) {
+      seterrMsgs([...errMsgs, 'Insert the student ID number first'])
+      return;
+    }
+
+    if (!event.target.files[0] || !URL) return;
+
+    setImages(event.target.files[0])
+    setImageDisplay(URL.createObjectURL(event.target.files[0]))
+    console.log('event.target.files[0]', event.target.files[0])
+    handleUpload(event.target.files[0], false)
+  }
+
+  function randomIntFromInterval(min, max) { // min and max included 
+    return Math.floor(Math.random() * (max - min + 1) + min)
+  }
+
+  const handleUpload = async (file, update) => {
+    if (!file) {
+      return
+    }
+    var rand;
+
+
+    const storageRef = ref(storage, `/projects/Nastalhim/ID-${userInfo.studentID}`);
+
+    // progress can be paused and resumed. It also exposes progress updates.
+    // Receives the storage reference and the file to upload.
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const percent = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
+
+        // update progress
+        setPercent(percent);
+      },
+      (err) => console.log(err),
+      () => {
+        // download url
+        getDownloadURL(uploadTask.snapshot.ref).then(async (url) => {
+          console.log(url);
+          setNewUrl(url)
+
+        });
+      }
+    );
+  };
 
   return (
     <div className="formBox flex middle-pos" >
@@ -241,37 +365,81 @@ export default function RegisterForm() {
                   onChange={(e) => handleUserInfo(e)}
                   value={userInfo.fullname}
                 />
-              </div>
-              <div className="mb-3 w-100">
-                <label htmlFor="usernameInput" className="form-label">
-                  Student ID
-                </label>
-                <input
-                  type="text"
-                  id="usernameInput"
-                  className="form-control w-100"
-                  placeholder="Student ID"
-                  name='studentID'
-                  onChange={(e) => handleUserInfo(e)}
-                  value={userInfo.studentID}
 
-                />
-              </div>
-              <div className="mb-3 w-100">
-                <label htmlFor="usernameInput" className="form-label">
-                  University name
-                </label>
-                <input
-                  type="text"
-                  id="usernameInput"
-                  className="form-control w-100"
-                  placeholder="University name"
-                  name='univeristy'
-                  onChange={(e) => handleUserInfo(e)}
-                  value={userInfo.univeristy}
 
-                />
+                <div className="mb-3 w-100">
+                  <label htmlFor="usernameInput" className="form-label">
+                    University
+                  </label>
+                  <select name='univeristySelect' id="options" onChange={(e) => handleUserInfo(e)}
+                    value={userInfo.univeristySelect} className="form-control w-100">
+                    <option value="">--Please choose an option--</option>
+                    <option value="Sultan Qaboos University">Sultan Qaboos University</option>
+                    <option value="Nizwa University">Nizwa University</option>
+                    <option value="Sohar University">Sohar University</option>
+                    <option value="GUtech">GUtech</option>
+                    <option value="University of Technology and Applied Science">University of Technology and Applied Science</option>
+
+                    <option value={0}>Other</option>
+
+                  </select>
+                </div>
+                {userInfo.univeristySelect == 0 ?
+                  <div className="mb-3 w-100">
+                    <label htmlFor="usernameInput" className="form-label">
+                      Enter The University's name
+                    </label>
+                    <input
+                      type="text"
+                      id="usernameInput"
+                      className="form-control w-100"
+                      placeholder="University name"
+                      name='univeristy'
+                      onChange={(e) => handleUserInfo(e)}
+                      value={userInfo.univeristy}
+
+                    />
+                  </div> : ''
+                }
+                <div className="mb-3 w-100">
+                  <label htmlFor="usernameInput" className="form-label">
+                    Student ID
+                  </label>
+                  <input
+                    type="text"
+                    id="usernameInput"
+                    className="form-control w-100"
+                    placeholder="Student ID"
+                    name='studentID'
+                    onChange={(e) => handleUserInfo(e)}
+                    value={userInfo.studentID}
+
+                  />
+                </div>
+                <div className="mb-3 w-100">
+                  <label htmlFor="usernameInput" className="form-label">
+                    Student ID Photo
+                  </label>
+                </div>
+                <div className='image-row'>
+                  <span>
+                    <input style={{ color: 'black', minWidth: '100%' }} type="file" accept="/image/*" onChange={handleChange} />
+                    {percent == 0 ? '' :
+                      <span className="load-up"><p style={{ width: percent + "%" }}></p></span>
+                    }
+                    {percent == 100 ? <> <CheckCircleOutlineOutlinedIcon /> Upload success</> : ''}
+                  </span>
+                  <div><img style={{ width: '60%' }} src={imageDisplay != null ? imageDisplay : ''} /></div>
+                </div>
               </div>
+
+              <div className="mb-3 w-100">
+                <FormControlLabel style={{ margin: '15px 0px 10px' }} control={<Switch defaultChecked={isVodaphone} onChange={() => setIsVodaphone(!isVodaphone)} value={isVodaphone} />} label="Vodaphone account holder?" />
+
+                {isVodaphone == true ? <p style={{ color: 'brown' }}>**Vodaphone holder are eligable for 3 books</p> :
+                  <p style={{ color: 'brown' }}>**Non Vodaphone holder are eligable for 3 books</p>}
+              </div>
+
               <div className="mb-3 w-100">
                 <label htmlFor="passwordInput" className="form-label">
                   Phone
