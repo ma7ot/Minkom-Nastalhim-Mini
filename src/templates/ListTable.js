@@ -121,7 +121,7 @@ const ListTable = () => {
     };
 
     const filteredData = students.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.student_id.toFixed(0).includes(searchTerm.toLowerCase()) || item.univeristy.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.student_id.toLowerCase().includes(searchTerm.toLowerCase()) || item.univeristy.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const slicedData = filteredData.slice(
