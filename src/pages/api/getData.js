@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     if (incoming.fetch == 'studentsList') { //urrent_date
       try {
 
-        const query = "SELECT * FROM students ORDER BY date DESC";
+        const query = "SELECT * FROM students ORDER BY created_at DESC";
 
         const values = [];
         const [data] = await dbconnection.execute(query, values);
